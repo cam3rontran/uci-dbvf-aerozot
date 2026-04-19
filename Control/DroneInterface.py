@@ -5,6 +5,8 @@
 #Drone Controller Class and constructor to initialize firmware and states
 
 #include header files eventually for future layers 
+from Firmware import FlightFirmware 
+
 class DroneController:
     def __init__(self, firmware):
         self.firmware = firmware # we are going to eventually need to build a firmware layer
