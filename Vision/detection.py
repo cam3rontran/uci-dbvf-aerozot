@@ -1,6 +1,6 @@
 import cv2
 
-DUMMY_BOX = (220, 165, 420, 315)  # (x1, y1, x2, y2) centered
+DUMMY_BOX = (220, 165, 420, 315)  #(x1, y1, x2, y2) centered
 label = "DUMMY DETECTION"
 
 def run_detection(frame):

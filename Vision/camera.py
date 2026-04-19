@@ -1,7 +1,7 @@
 import cv2
 from detection import run_detection, draw_detections
 
-USE_WEBCAM = True  # False = video feed
+USE_WEBCAM = True  #False = video feed
 VIDEO_PATH = "sample_video_path.mp4"
 
 def get_source():
