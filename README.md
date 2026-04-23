@@ -8,16 +8,25 @@ UCI's Official AeroZot Avionics Software
 
 
 **Computer Vision** (Ownership- @Thea Tan & @Likhith Bollam)
-Status:
+
+Status: 
+
+
 Notes:
 
 
 **Mission** (Ownership: @Samyak Anand)
+
 Status:
+
+
 Notes:
 
 
 **Control** (Ownership: @Richard Nguyen)
+
 Status:
+
+
 Notes:
 
