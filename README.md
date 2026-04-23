@@ -17,6 +17,7 @@ Notes:
     - {detected: True/False, x: int, y: int}
   - Add basic validation:
     - If no frame, return {detected: False}
+  - You may start implementing lidar.py, use placeholder values
   - Optional: Begin simple filtering/smoothing of detection (reduce jitter)
 
 **Mission** (Ownership: @Samyak Anand)
@@ -48,5 +49,8 @@ Notes:
   - Finalize execute_action() function
   - Add safety handling:
     - Prevent movement if not armed/airborne
+  - You may start implementing `actions.py`:
+    - Purpose: translate mission decisions → control function calls
+    - `droneinterface.py` defines how the drone moves
   - Optional: Add STOP or hover behavior
 
