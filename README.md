@@ -3,11 +3,11 @@ UCI's Official AeroZot Avionics Software
 
 
 
-**Note: Please update the README with descirptions of the changes made to the repository and the status for each subtask**
+**Note: Please update the README with descriptions of the changes made to the repository and the status for each subtask**
 
 
 
-**Computer Vision** (Ownership- @Thea Tan & @Shravan Ramakrishna)
+**Computer Vision** (Ownership: @Thea Tan & @Shravan Ramakrishna)
 
 Status: 
 
