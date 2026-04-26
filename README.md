@@ -11,6 +11,7 @@ UCI's Official AeroZot Avionics Software
 
 Status: 
   - fixed detection return format and added frame validation
+  - can output structured detection in json file
 
 
 Notes:
