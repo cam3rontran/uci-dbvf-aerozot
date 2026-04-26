@@ -1,5 +1,5 @@
 import cv2
-from detection import run_detection, draw_detections
+from detection import init_log, run_detection, draw_detections
 
 USE_WEBCAM = True  #False = video feed
 VIDEO_PATH = "sample_video_path.mp4"
@@ -11,6 +11,8 @@ def get_source():
         return cv2.VideoCapture(VIDEO_PATH)
 
 def main():
+    init_log()
+    
     cap = get_source()
 
     if not cap.isOpened():
