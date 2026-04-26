@@ -10,12 +10,13 @@ UCI's Official AeroZot Avionics Software
 **Computer Vision** (Ownership: @Thea Tan & @Shravan Ramakrishna)
 
 Status: 
+  - fixed detection return format and added frame validation
 
 
 Notes:
-  - Convert dummy bounding box into consistent detection data
+  - (addressed) Convert dummy bounding box into consistent detection data
     - {detected: True/False, x: int, y: int}
-  - Add basic validation:
+  - (addressed) Add basic validation:
     - If no frame, return {detected: False}
   - You may start implementing lidar.py, use placeholder values
   - Optional: Begin simple filtering/smoothing of detection (reduce jitter)
