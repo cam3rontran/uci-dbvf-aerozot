@@ -12,7 +12,6 @@ UCI's Official AeroZot Avionics Software
 Status: 
   - fixed detection return format and added frame validation
   - can output structured detection in json file
-  - created lidar.py
 
 
 Notes:
@@ -39,13 +38,13 @@ Notes:
     simply output to the Control module
 
 Notes:
-  - Implement the "decider" function
+  - (done) Implement the "decider" function
   - Must return one of the following:
     - "MOVE_FORWARD"
     - "MOVE_LEFT"
     - "MOVE_RIGHT"
     - "SEARCH"
-  - Use detection input:
+  - (done) Use detection input:
     - If no detection, "SEARCH"
     - Use x-position for directional movement
 
@@ -56,13 +55,13 @@ Status:
 
 Notes:
   - Required fixes:
-    - Add missing firmware functions:
+    - (done) Add missing firmware functions:
       - takeoff(), disarm(), apply_movement(), emergency_land()
-    - Fix import case sensitivity (firmware vs Firmware)
-  - Finalize execute_action() function
+    - (done) Fix import case sensitivity (firmware vs Firmware)
+  - (done) Finalize execute_action() function
   - Add safety handling:
     - Prevent movement if not armed/airborne
-  - You may start implementing `actions.py`:
+  - (done) You may start implementing `actions.py`:
     - Purpose: translate mission decisions → control function calls
     - `droneinterface.py` defines how the drone moves
   - Optional: Add STOP or hover behavior

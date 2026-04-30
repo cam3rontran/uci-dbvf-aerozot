@@ -1,11 +1,11 @@
 #Drone Control Module - Top layer
 
-#Last updated: Richard Nguyen - April 18, 2026
+#Last updated: Richard Nguyen - April 25, 2026
 
 #Drone Controller Class and constructor to initialize firmware and states
 
 #include header files eventually for future layers 
-from Firmware import FlightFirmware 
+from firmware import FlightFirmware 
 
 class DroneController:
     def __init__(self, firmware):
@@ -92,3 +92,5 @@ class DroneController:
             raise RuntimeError("Drone is disarmed")
         if not self.airborne:
             raise RuntimeError("Drone is on the ground. Take off first.")
+        
+    
