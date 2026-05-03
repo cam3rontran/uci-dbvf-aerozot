@@ -14,7 +14,7 @@ def decider(detection=None):
         return "MOVE_RIGHT"
     else:
         return "MOVE_FORWARD"
-
+    
 
 def execute_action(controller, detection=None):
     if not controller.armed or not controller.airborne:
@@ -30,5 +30,7 @@ def execute_action(controller, detection=None):
         controller.move_left()
     elif decision == "MOVE_RIGHT":
         controller.move_right()
+    elif decision == "STOP":
+        controller.stop()
     elif decision == "SEARCH":
         controller.rotate_right()
