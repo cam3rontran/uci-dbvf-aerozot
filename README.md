@@ -59,10 +59,14 @@ Notes:
       - takeoff(), disarm(), apply_movement(), emergency_land()
     - (done) Fix import case sensitivity (firmware vs Firmware)
   - (done) Finalize execute_action() function
-  - Add safety handling:
+  - (done) Add safety handling:
     - Prevent movement if not armed/airborne
   - (done) You may start implementing `actions.py`:
     - Purpose: translate mission decisions → control function calls
     - `droneinterface.py` defines how the drone moves
-  - Optional: Add STOP or hover behavior
+  - (done) Optional: Add STOP or hover behavior
+
+  Notes: 
+  - Safety handling was already addressed with _check_flight, but fixed possible edge case with "stop" method
+  - Added stop decision, might add confidence parameter 
 

@@ -82,7 +82,8 @@ class DroneController:
         self.firmware.apply_movement(throttle=0.5, pitch=0.0, roll=0.0, yaw=speed)
 
     def stop(self):
-        self._check_flight()
+        if not self.armed:
+            raise RuntimeError("Drone is disarmed")
         self.firmware.apply_movement(throttle=0.5, pitch=0.0, roll=0.0, yaw=0.0)
         print("Drone holding position.")
 
