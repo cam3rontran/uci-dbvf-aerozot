@@ -109,6 +109,38 @@ def detect_edges_sobel(frame):
 
     return edges
 
+def filter_squares(contours):
+    squares = []
+
+    for contour in contours:
+        area = cv2.contourArea(contour)
+
+        if area < MIN_CONTOUR_AREA:
+            continue
+
+        # Approximate contour shape
+        perimeter = cv2.arcLength(contour, True)
+        approx = cv2.approxPolyDP(contour, 0.02 * perimeter, True)
+
+        # Check fpr 4 corners
+        if len(approx) != 4:
+            continue
+
+        # Check aspect ratio
+        x, y, w, h = cv2.boundingRect(contour)
+        aspect_ratio = w / h if h > 0 else 0
+
+        if SQUARE_ASPECT_MIN < aspect_ratio < SQUARE_ASPECT_MAX:
+            squares.append({
+                "contour": contour,
+                "approx": approx,
+                "area": area,
+                "aspect_ratio": round(aspect_ratio, 2),
+                "bounding_rect": (x, y, w, h)
+            })
+    
+    return squares
+
 if __name__ == "__main__":
     _dir = os.path.dirname(__file__)
 
