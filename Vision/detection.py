@@ -90,7 +90,24 @@ class ImagePreprocessor:
  
         return frame
     
+def detect_edges_sobel(frame):
+    """Sobel edge detection on greyscale frame"""
+    grey = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    grey = cv2.GaussianBlur(grey, (5, 5), 0)
 
+    # Sobel X: detects vertical edges
+    sobel_x = cv2.Sobel(grey, cv2.CV_64F, 1, 0, ksize=3)
+
+    # Sobel Y: detects horizontal edges
+    sobel_y = cv2.Sobel(grey, cv2.CV_64F, 0, 1, ksize=3)
+
+    # Combine: total edge strength
+    edges = cv2.magnitude(sobel_x, sobel_y)
+
+    # Normalize back for contour detection
+    edges = np.uint8(np.clip(edges, 0, 255))
+
+    return edges
 
 if __name__ == "__main__":
     _dir = os.path.dirname(__file__)
