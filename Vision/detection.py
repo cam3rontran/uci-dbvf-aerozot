@@ -7,8 +7,25 @@ from datetime import datetime
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
-DUMMY_BOX = (220, 165, 420, 315)  # (x1, y1, x2, y2) centered
-LABEL = "DUMMY DETECTION"
+# Config
+FRAME_WIDTH = 640
+FRAME_HEIGHT = 480
+
+# Minimum contour area in pixels to count as a detection
+MIN_CONTOUR_AREA = 500
+
+# Ratio range for square detection (perfect square = 1.0)
+SQUARE_ASPECT_MIN = 0.75
+SQUARE_ASPECT_MAX = 1.25
+
+# Waypoint size classification thresholds (contour area in pixels)
+# Placeholder
+WAYPOINT_SIZES = {
+    "F2_3x3": (500, 3000),
+    "F1_7x7": (3000, 10000),
+    "LH_15x15": (10000, 30000),
+    "WAWM_20x20": (30000, 100000),
+}
 
 def run_detection(frame):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -46,6 +63,34 @@ def draw_detections(frame, detections):
     cv2.putText(frame, LABEL, (x1, y1 - 10),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
     return frame
+
+class ImagePreprocessor:
+    """Handles all frame preprocessing before detection"""
+ 
+    def __init__(self, target_size=(FRAME_WIDTH, FRAME_HEIGHT)):
+        self.target_size = target_size
+ 
+    def preprocess(self, frame):
+        """Apply full preprocessing pipeline."""
+        # Resize
+        processed = cv2.resize(frame, self.target_size)
+ 
+        # Denoise using Gaussian blur
+        processed = cv2.GaussianBlur(processed, (5, 5), 0)
+ 
+        # Enhance contrast using CLAHE
+        lab = cv2.cvtColor(processed, cv2.COLOR_BGR2LAB)
+        l_channel, a, b = cv2.split(lab)
+ 
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        l_enhanced = clahe.apply(l_channel)
+ 
+        enhanced = cv2.merge([l_enhanced, a, b])
+        frame = cv2.cvtColor(enhanced, cv2.COLOR_LAB2BGR)
+ 
+        return frame
+    
+
 
 if __name__ == "__main__":
     _dir = os.path.dirname(__file__)
