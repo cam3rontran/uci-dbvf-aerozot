@@ -1,21 +1,23 @@
-#Drone Control Module - Top layer
+# Drone Control Module — Top layer
+# Last updated: Richard Nguyen April 25, 2026
 
-#Last updated: Richard Nguyen - April 25, 2026
+from firmware import FlightFirmware
 
-#Drone Controller Class and constructor to initialize firmware and states
-
-#include header files eventually for future layers 
-from firmware import FlightFirmware 
 
 class DroneController:
-    def __init__(self, firmware):
-        self.firmware = firmware # we are going to eventually need to build a firmware layer
-        self.armed = False
+    """
+    High-level drone interface.  Talks only to FlightFirmware; never
+    touches MAVLink directly.  All MAVLink details live in firmware.py.
+    """
+
+    def __init__(self, connection_string: str = "udp:127.0.0.1:14550"):
+        self.firmware = FlightFirmware(connection_string)
+        self.armed    = False
         self.airborne = False
 
-    #primary flight control methods, with basic state checks and calls to firmware layer
+    #states and arming methods
     def arm(self):
-        self.firmware.arm() #next firmware layer call
+        self.firmware.arm()
         self.armed = True
         print("Armed")
 
@@ -23,14 +25,14 @@ class DroneController:
         if self.airborne:
             print("Cannot disarm while airborne.")
             return
-        self.firmware.disarm() 
+        self.firmware.disarm()
         self.armed = False
         print("Disarmed")
 
-    def takeoff(self):
+    def takeoff(self, altitude_m: float = 5.0):
         if not self.armed:
             self.arm()
-        self.firmware.takeoff()
+        self.firmware.takeoff(altitude_m)
         self.airborne = True
         print("Takeoff!")
 
@@ -46,38 +48,37 @@ class DroneController:
         self.firmware.emergency_land()
         self.airborne = False
         print("Emergency landing triggered.")
-    
 
-    #arbritary movement methods with speed params, can change later when dev
-    def move_forward(self, speed=0.2):
+    #movement methods
+    def move_forward(self, speed: float = 0.2):
         self._check_flight()
         self.firmware.apply_movement(throttle=0.5, pitch=speed, roll=0.0, yaw=0.0)
 
-    def move_backward(self, speed=0.2):
+    def move_backward(self, speed: float = 0.2):
         self._check_flight()
         self.firmware.apply_movement(throttle=0.5, pitch=-speed, roll=0.0, yaw=0.0)
 
-    def move_left(self, speed=0.2):
+    def move_left(self, speed: float = 0.2):
         self._check_flight()
         self.firmware.apply_movement(throttle=0.5, pitch=0.0, roll=-speed, yaw=0.0)
 
-    def move_right(self, speed=0.2):
+    def move_right(self, speed: float = 0.2):
         self._check_flight()
         self.firmware.apply_movement(throttle=0.5, pitch=0.0, roll=speed, yaw=0.0)
 
-    def ascend(self, speed=0.1):
+    def ascend(self, speed: float = 0.1):
         self._check_flight()
         self.firmware.apply_movement(throttle=0.5 + speed, pitch=0.0, roll=0.0, yaw=0.0)
 
-    def descend(self, speed=0.1):
+    def descend(self, speed: float = 0.1):
         self._check_flight()
         self.firmware.apply_movement(throttle=0.5 - speed, pitch=0.0, roll=0.0, yaw=0.0)
 
-    def rotate_left(self, speed=0.1):
+    def rotate_left(self, speed: float = 0.1):
         self._check_flight()
         self.firmware.apply_movement(throttle=0.5, pitch=0.0, roll=0.0, yaw=-speed)
 
-    def rotate_right(self, speed=0.1):
+    def rotate_right(self, speed: float = 0.1):
         self._check_flight()
         self.firmware.apply_movement(throttle=0.5, pitch=0.0, roll=0.0, yaw=speed)
 
@@ -86,12 +87,10 @@ class DroneController:
             raise RuntimeError("Drone is disarmed")
         self.firmware.apply_movement(throttle=0.5, pitch=0.0, roll=0.0, yaw=0.0)
         print("Drone holding position.")
-
-    #check if drone is in valid state for movement commands
+    
+    #internal helper 
     def _check_flight(self):
         if not self.armed:
             raise RuntimeError("Drone is disarmed")
         if not self.airborne:
             raise RuntimeError("Drone is on the ground. Take off first.")
-        
-    
