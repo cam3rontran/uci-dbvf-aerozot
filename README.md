@@ -10,17 +10,9 @@ UCI's Official AeroZot Avionics Software
 **Computer Vision** (Ownership: @Thea Tan & @Shravan Ramakrishna)
 
 Status: 
-  - fixed detection return format and added frame validation
-  - can output structured detection in json file
-
+  - In testing phase
 
 Notes:
-  - (addressed) Convert dummy bounding box into consistent detection data
-    - {detected: True/False, x: int, y: int}
-  - (addressed) Add basic validation:
-    - If no frame, return {detected: False}
-  - You may start implementing lidar.py, use placeholder values
-  - Optional: Begin simple filtering/smoothing of detection (reduce jitter)
 
 **Mission** (Ownership: @Samyak Anand)
 
@@ -37,34 +29,11 @@ Notes:
   - The module may be over encompassing right now, if needed I can adjust it to
     simply output to the Control module
 
-Notes:
-  - (done) Implement the "decider" function
-  - Must return one of the following:
-    - "MOVE_FORWARD"
-    - "MOVE_LEFT"
-    - "MOVE_RIGHT"
-    - "SEARCH"
-  - (done) Use detection input:
-    - If no detection, "SEARCH"
-    - Use x-position for directional movement
-
 **Control** (Ownership: @Richard Nguyen)
 
 Status:
 
-
 Notes:
-  - Required fixes:
-    - (done) Add missing firmware functions:
-      - takeoff(), disarm(), apply_movement(), emergency_land()
-    - (done) Fix import case sensitivity (firmware vs Firmware)
-  - (done) Finalize execute_action() function
-  - (done) Add safety handling:
-    - Prevent movement if not armed/airborne
-  - (done) You may start implementing `actions.py`:
-    - Purpose: translate mission decisions → control function calls
-    - `droneinterface.py` defines how the drone moves
-  - (done) Optional: Add STOP or hover behavior
 
   Notes: 
   - Safety handling was already addressed with _check_flight, but fixed possible edge case with "stop" method
