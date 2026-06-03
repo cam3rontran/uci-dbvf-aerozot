@@ -1,0 +1,54 @@
+digraph mission_blackbox {
+  label="Mission Module — Black-Box Data Flow";
+  labelloc="t";
+  fontname="Helvetica"; fontsize=16;
+  rankdir=LR;
+  node [fontname="Helvetica", fontsize=11];
+  edge [fontname="Helvetica", fontsize=10];
+
+  // ---- External inputs (left) ----
+  wpfile [shape=note, style="filled", fillcolor="#FBF0C4",
+          label=".waypoints file\n(QGC WPL 110)"];
+
+  // ---- The Mission module (center) ----
+  subgraph cluster_mission {
+    label="Mission module";
+    style="rounded,filled"; fillcolor="#F3F7FD"; color="#3B6EA5"; fontname="Helvetica-Bold";
+
+    wp  [shape=box, style="rounded,filled", fillcolor="#EAF1FB",
+         label="waypoint.py\nparse → [Waypoint]\n(schema / MarkerType)"];
+    nav [shape=box, style="rounded,filled", fillcolor="#E3D7F4",
+         label="logic.py\nDroneNavigator\n(policy • sequencing • dispatch)"];
+    drn [shape=box, style="rounded,filled", fillcolor="#D7ECF7",
+         label="drone.py\nDrone\n(MAVLink abstraction)"];
+
+    wp  -> nav [label="[Waypoint]"];
+    nav -> drn [label="commands\n(goto, takeoff,\norbit, ...)"];
+    drn -> nav [label="telemetry\n(position, fix)", style=dashed];
+  }
+
+  // ---- External world (right) ----
+  mav [shape=component, style="filled", fillcolor="#F4DCDC", label="pymavlink\n(mavutil)"];
+  fc  [shape=box3d, style="filled", fillcolor="#F4C7C3", label="Autopilot\n(ArduPilot / PX4)"];
+
+  // ---- Visual-anchoring collaborators (injected hooks) ----
+  cam [shape=note, style="filled", fillcolor="#FBF0C4", label="Camera\n(frames)"];
+  vis [shape=box, style="rounded,filled", fillcolor="#E8E8E8",
+       label="Vision\nrun_detection()\n(detect physical waypoint)"];
+  ctl [shape=box, style="rounded,filled", fillcolor="#E8E8E8",
+       label="Control\nanchor_command()\n(direction + duration)"];
+
+  wpfile -> wp [label="stdin path"];
+  drn -> mav  [label="MAVLink msgs"];
+  mav -> drn  [label="telemetry", style=dashed];
+  mav -> fc   [label="UDP/serial"];
+
+  // anchor loop: Mission orchestrates Camera -> Vision -> Control -> Drone.move
+  cam -> vis  [label="frame"];
+  vis -> nav  [label="detection", style=dashed, color="#27AE60"];
+  nav -> ctl  [label="detection", color="#27AE60"];
+  ctl -> nav  [label="dir + speed + duration", style=dashed, color="#27AE60"];
+  nav -> drn  [label="move_for_duration()", color="#27AE60"];
+
+  {rank=same; vis; ctl;}
+}

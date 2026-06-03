@@ -1,0 +1,142 @@
+@startuml mission_class
+set namespaceSeparator none
+title Mission Module — UML Class Diagram
+
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam linetype ortho
+skinparam packageStyle rectangle
+skinparam class {
+  BackgroundColor #F7FAFF
+  BorderColor #3B6EA5
+  ArrowColor #3B6EA5
+}
+
+package "waypoint.py" {
+  enum MarkerType {
+    WAYPOINT = 16
+    LOITER_UNLIM = 17
+    LOITER_TURNS = 18
+    LOITER_TIME = 19
+    RETURN_TO_LAUNCH = 20
+    LAND = 21
+    TAKEOFF = 22
+    CHANGE_SPEED = 178
+  }
+
+  class Waypoint {
+    +waypoint_id : int
+    +is_current : bool
+    +frame : int
+    +marker_type : MarkerType
+    +params : list<float>
+    +lat : float
+    +lon : float
+    +alt : float
+    --
+    +hold_time : float <<property>>
+    {static} +generate_from(file) : list<Waypoint>
+  }
+}
+
+package "logic.py" {
+  class DroneNavigator {
+    -_drone : Drone
+    -_waypoints_data : list<Waypoint>
+    -_camera : Camera?
+    -_vision : VisionDetector?
+    -_control : AnchorController?
+    --
+    +main()
+    -_consume_waypoints()
+    -_consume_waypoint(wp)
+    -_fly_to(wp)
+    -_loiter(wp, seconds)
+    -_anchor_to_waypoint(wp)  <<hook>>
+  }
+
+  exception EndExecution {
+    -_exit_code : int
+    -_message : str
+  }
+
+  interface Camera <<Protocol>> {
+    +get_frame() : frame?
+  }
+  interface VisionDetector <<Protocol>> {
+    +run_detection(frame) : dict?
+  }
+  interface AnchorController <<Protocol>> {
+    +anchor_command(detection) : (direction, speed, duration)?
+  }
+
+  note bottom of DroneNavigator
+    Mission policy constants:
+    ACCEPTANCE_RADIUS_M, ARRIVAL_TIMEOUT_S,
+    GPS_LOCK_TIMEOUT_S, ORBIT_SPEED_MS,
+    ALTITUDE_TOLERANCE_M, TAKEOFF_TIMEOUT_S
+  end note
+}
+
+package "drone.py" {
+  class Drone {
+    -_master
+    -_lat / _lon / _alt : float
+    -_relative_alt : float
+    -_gps_fixed / _has_position : bool
+    --
+    +position : tuple <<property>>
+    +gps_fixed : bool <<property>>
+    +master <<property>>
+    .. Telemetry ..
+    +update_localization()
+    +wait_for_gps_lock(timeout) : bool
+    +wait_for_altitude(target, tol, timeout) : bool
+    +wait_for_arrival(lat, lon, radius, timeout) : bool
+    +distance_to(lat, lon) : float
+    .. Commands ..
+    +arm() / disarm()
+    +set_mode(mode)
+    +goto(lat, lon, alt)
+    +takeoff(alt) / land()
+    +hold_position(lat?, lon?, alt?)
+    +return_to_launch()
+    +change_speed(speed, airspeed)
+    +orbit(radius, speed, turns, ...)
+    +send_velocity(vx, vy, vz, yaw_rate)
+    +move_for_duration(dir, speed, duration)
+    +move_for_distance(dir, speed, distance) : bool
+  }
+
+  class "horizontal_distance_m()" as hdist <<(F,#E8A33D) function>>
+}
+
+class "pymavlink.mavutil" as mav <<(E,#C97B7B) external>>
+class "Autopilot\n(ArduPilot / PX4)" as fc <<(E,#C97B7B) external>>
+
+class "Vision\n(module)" as vision_ext <<(E,#C97B7B) external>>
+class "Control\n(anchor calc)" as control_ext <<(E,#C97B7B) external>>
+
+Waypoint "*" --> "1" MarkerType : typed by
+DroneNavigator o--> "1" Drone : owns / injects
+DroneNavigator --> "*" Waypoint : consumes
+DroneNavigator ..> EndExecution : raises
+DroneNavigator ..> Camera : camera
+DroneNavigator ..> VisionDetector : vision
+DroneNavigator ..> AnchorController : control
+Drone ..> mav : uses
+Drone ..> hdist : uses
+mav <..> fc : MAVLink
+
+vision_ext ..|> Camera : implements
+vision_ext ..|> VisionDetector : implements
+control_ext ..|> AnchorController : implements
+
+note as N1
+  Visual anchoring (hook): after GPS arrival at a WAYPOINT,
+  _anchor_to_waypoint loops Camera -> Vision -> Control -> Drone.move_for_duration
+  until Control returns None (anchored). No-op unless vision + control injected.
+end note
+N1 .. DroneNavigator
+
+@enduml

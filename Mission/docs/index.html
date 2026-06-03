@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mission Module — Architecture</title>
+<style>
+  :root { --accent:#3B6EA5; --bg:#f7f9fc; --card:#ffffff; --ink:#1c2733; --muted:#5b6b7b; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+         background:var(--bg); color:var(--ink); line-height:1.55; }
+  header { background:var(--accent); color:#fff; padding:28px 24px; }
+  header h1 { margin:0 0 4px; font-size:1.6rem; }
+  header p { margin:0; opacity:.9; }
+  main { max-width:1100px; margin:0 auto; padding:24px; }
+  section { background:var(--card); border:1px solid #e3e9f0; border-radius:10px;
+            padding:20px 24px; margin:22px 0; box-shadow:0 1px 3px rgba(0,0,0,.04); }
+  section h2 { margin-top:0; color:var(--accent); border-bottom:2px solid #eef2f7; padding-bottom:8px; }
+  figure { margin:0; text-align:center; }
+  figure img { max-width:100%; height:auto; border:1px solid #eef2f7; border-radius:6px; background:#fff; }
+  figcaption { color:var(--muted); font-size:.85rem; margin-top:8px; }
+  table { width:100%; border-collapse:collapse; margin-top:6px; }
+  th, td { text-align:left; padding:8px 10px; border-bottom:1px solid #eef2f7; vertical-align:top; }
+  th { color:var(--muted); font-weight:600; font-size:.85rem; }
+  code { background:#eef2f7; padding:1px 5px; border-radius:4px; font-size:.9em; }
+  .io { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  .io h3 { margin:0 0 6px; font-size:1rem; }
+  ul { margin:6px 0; padding-left:20px; }
+  @media (max-width:720px){ .io{ grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Mission Module — Architecture</h1>
+  <p>UCI DBVF AeroZot · autonomous GUIDED-mode waypoint navigation</p>
+</header>
+
+<main>
+  <section>
+    <h2>Black-box overview</h2>
+    <p>The Mission module turns a Mission Planner / QGC waypoint file into a sequence of
+       real-time MAVLink commands flown in <strong>GUIDED mode</strong>. It owns the MAVLink
+       link (via <code>Drone</code>) and passes that same handle into the Vision and Control
+       modules — there is no ownership handoff.</p>
+    <div class="io">
+      <div>
+        <h3>Inputs</h3>
+        <ul>
+          <li><strong>Waypoint file</strong> (<code>.waypoints</code>/<code>.txt</code>, QGC WPL 110) — path read from stdin</li>
+          <li><strong>Telemetry</strong> from the autopilot (<code>GLOBAL_POSITION_INT</code>, <code>GPS_RAW_INT</code>) over MAVLink</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Outputs</h3>
+        <ul>
+          <li><strong>MAVLink commands</strong> to the autopilot (takeoff, goto, loiter, orbit, RTL, change-speed, land)</li>
+          <li><strong>Shared <code>Drone</code></strong> instance injected into Vision / Control</li>
+          <li><strong>Exit status</strong> via <code>EndExecution</code> (0 = healthy, 1 = aborted)</li>
+        </ul>
+      </div>
+    </div>
+    <figure>
+      <img src="mission_blackbox.svg" alt="Mission black-box data-flow diagram">
+      <figcaption>Black-box data flow — Graphviz</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>UML class diagram</h2>
+    <p>Three files, clean separation: <code>waypoint.py</code> (parsing/schema) →
+       <code>logic.py</code> (mission policy &amp; sequencing) → <code>drone.py</code>
+       (the only code that touches pymavlink).</p>
+    <figure>
+      <img src="mission_class.svg" alt="Mission UML class diagram">
+      <figcaption>UML class diagram — PlantUML</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>Execution flowchart</h2>
+    <p>How <code>DroneNavigator</code> consumes the waypoint list: gate on a real GPS fix,
+       then dispatch each waypoint on its <code>MarkerType</code>, blocking until the
+       behavior actually completes (arrival, climb, loiter, orbit) before continuing.</p>
+    <figure>
+      <img src="mission_flow.svg" alt="Mission execution flowchart">
+      <figcaption>Execution flowchart — Graphviz</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>Visual anchoring (fine movement)</h2>
+    <p>GPS gets the drone <em>near</em> a waypoint (acceptance radius ~1.5 m). To
+       <strong>anchor</strong> precisely onto a <em>physical</em> waypoint seen by the camera,
+       Mission runs a closed loop after GPS arrival: it asks <strong>Vision</strong> to detect the
+       marker and <strong>Control</strong> to compute the corrective move (a body-frame direction
+       plus a duration), then executes it via <code>Drone.move_for_duration</code> — repeating until
+       Control reports the drone is centered.</p>
+    <p><strong>Mission only orchestrates.</strong> Detection lives in Vision; the direction/duration
+       math lives in Control. Mission provides the hooks (the <code>Camera</code>,
+       <code>VisionDetector</code>, and <code>AnchorController</code> Protocols) and the loop. The
+       whole step is a no-op unless a vision detector and anchor controller are injected, so the
+       mission still runs GPS-only by default.</p>
+    <figure>
+      <img src="anchor_sequence.svg" alt="Visual anchoring sequence diagram">
+      <figcaption>Visual anchoring sequence — PlantUML</figcaption>
+    </figure>
+    <h3>Hook contract</h3>
+    <table>
+      <tr><th>Protocol</th><th>Method</th><th>Returns</th></tr>
+      <tr><td><code>Camera</code></td><td><code>get_frame()</code></td><td>latest frame, or <code>None</code></td></tr>
+      <tr><td><code>VisionDetector</code></td><td><code>run_detection(frame)</code></td><td><code>{"detected": bool, ...offset}</code></td></tr>
+      <tr><td><code>AnchorController</code></td><td><code>anchor_command(detection)</code></td><td><code>(direction, speed, duration)</code>, or <code>None</code> when anchored</td></tr>
+    </table>
+    <p style="color:var(--muted);font-size:.85rem">See <code>visual_anchoring.md</code> for the full contract, configuration, and failure modes.</p>
+  </section>
+
+  <section>
+    <h2>Waypoint behaviors (MarkerType → MAV_CMD)</h2>
+    <table>
+      <tr><th>MarkerType</th><th>MAV_CMD id</th><th>Drone action</th><th>Key params</th></tr>
+      <tr><td>WAYPOINT</td><td>16</td><td>goto + wait_for_arrival</td><td>lat/lon/alt</td></tr>
+      <tr><td>LOITER_UNLIM</td><td>17</td><td>hold_position (indefinite)</td><td>—</td></tr>
+      <tr><td>LOITER_TURNS</td><td>18</td><td>orbit (blocks for turns)</td><td>p1=turns, p3=radius</td></tr>
+      <tr><td>LOITER_TIME</td><td>19</td><td>hold_position + sleep</td><td>p1=seconds</td></tr>
+      <tr><td>RETURN_TO_LAUNCH</td><td>20</td><td>return_to_launch</td><td>—</td></tr>
+      <tr><td>LAND</td><td>21</td><td>land</td><td>—</td></tr>
+      <tr><td>TAKEOFF</td><td>22</td><td>takeoff + wait_for_altitude</td><td>alt</td></tr>
+      <tr><td>CHANGE_SPEED</td><td>178</td><td>change_speed</td><td>p2=speed (m/s)</td></tr>
+    </table>
+    <p style="color:var(--muted);font-size:.85rem">Row 0 of a QGC WPL file (HOME) and unsupported command ids are skipped by the parser.</p>
+  </section>
+</main>
+</body>
+</html>

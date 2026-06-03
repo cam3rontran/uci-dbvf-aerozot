@@ -1,0 +1,42 @@
+@startuml anchor_sequence
+title Visual Anchoring — Sequence (per WAYPOINT, after GPS arrival)
+
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam participant {
+  BackgroundColor #F7FAFF
+  BorderColor #3B6EA5
+}
+
+actor "Mission\n(DroneNavigator)" as M
+participant "Camera" as C
+participant "Vision" as V
+participant "Control" as K
+participant "Drone" as D
+
+M -> M : _fly_to(wp)\n(GPS arrival)
+note right of M : anchoring only if\nvision + control injected
+
+loop until anchored or budget (ANCHOR_MAX_ITERATIONS)
+  M -> C : get_frame()
+  C --> M : frame
+
+  M -> V : run_detection(frame)
+  V --> M : detection {detected, offset}
+
+  alt not detected
+    M -> M : skip anchoring\n(return)
+  else detected
+    M -> K : anchor_command(detection)
+    K --> M : (direction, speed, duration)\nor None
+
+    alt command is None
+      M -> M : anchored ✓ (return)
+    else has command
+      M -> D : move_for_duration(direction, speed, duration)
+      D --> M : (fine move complete)
+    end
+  end
+end
+
+@enduml

@@ -1,0 +1,73 @@
+digraph mission_flow {
+  label="Mission Module — Execution Flowchart (DroneNavigator)";
+  labelloc="t";
+  fontname="Helvetica"; fontsize=16;
+  rankdir=TB;
+  node [fontname="Helvetica", fontsize=11];
+  edge [fontname="Helvetica", fontsize=9, color="#3B6EA5"];
+
+  start   [shape=oval,    style="filled", fillcolor="#CDEBCB", label="main()"];
+  load    [shape=box,     style="rounded,filled", fillcolor="#EAF1FB",
+           label="Waypoint.generate_from(file)\n• parse QGC WPL\n• skip HOME (row 0)\n• skip unsupported cmd ids"];
+  gps     [shape=diamond, style="filled", fillcolor="#FBF0C4", label="wait_for_gps_lock\n(real position?)"];
+  abgps   [shape=oval,    style="filled", fillcolor="#F4C7C3", label="EndExecution(1)\nGPS timeout"];
+  loop    [shape=diamond, style="filled", fillcolor="#FBF0C4", label="more waypoints?"];
+  done    [shape=oval,    style="filled", fillcolor="#CDEBCB", label="EndExecution(0)\nall complete"];
+  disp    [shape=box,     style="rounded,filled", fillcolor="#E3D7F4",
+           label="_consume_waypoint(wp)\ndispatch on marker_type"];
+
+  // direct (no fly-to) behaviors
+  takeoff [shape=box, style="rounded,filled", fillcolor="#EAF1FB",
+           label="TAKEOFF\ndrone.takeoff(alt)\n→ wait_for_altitude"];
+  land    [shape=box, style="rounded,filled", fillcolor="#EAF1FB", label="LAND\ndrone.land()"];
+  rtl     [shape=box, style="rounded,filled", fillcolor="#EAF1FB", label="RETURN_TO_LAUNCH\ndrone.return_to_launch()"];
+  speed   [shape=box, style="rounded,filled", fillcolor="#EAF1FB", label="CHANGE_SPEED\ndrone.change_speed(p2)"];
+
+  // fly-to behaviors
+  flyto   [shape=box, style="rounded,filled", fillcolor="#D7ECF7",
+           label="_fly_to(wp)\ndrone.goto() → wait_for_arrival"];
+  abarr   [shape=oval, style="filled", fillcolor="#F4C7C3", label="EndExecution(1)\narrival timeout"];
+  turns   [shape=box, style="rounded,filled", fillcolor="#EAF1FB",
+           label="LOITER_TURNS\ndrone.orbit() → sleep(turns)"];
+  ltime   [shape=box, style="rounded,filled", fillcolor="#EAF1FB",
+           label="LOITER_TIME\nhold_position → sleep(p1)"];
+  lunlim  [shape=box, style="rounded,filled", fillcolor="#EAF1FB",
+           label="LOITER_UNLIM\nhold_position → sleep(∞)"];
+  anchor  [shape=box, style="rounded,filled", fillcolor="#D6F0DE",
+           label="_anchor_to_waypoint (HOOK)\nloop: Camera→Vision→Control→drone.move_for_duration\nuntil anchored or budget spent\n(no-op unless vision+control injected)"];
+  wpt     [shape=box, style="rounded,filled", fillcolor="#EAF1FB",
+           label="WAYPOINT\nhold(hold_time)"];
+
+  start -> load -> gps;
+  gps -> abgps [label="no"];
+  gps -> loop  [label="yes"];
+  loop -> done [label="no"];
+  loop -> disp [label="yes"];
+
+  disp -> takeoff [label="TAKEOFF"];
+  disp -> land    [label="LAND"];
+  disp -> rtl     [label="RTL"];
+  disp -> speed   [label="CHANGE_SPEED"];
+  disp -> flyto   [label="WAYPOINT / LOITER_*"];
+
+  takeoff -> abarr [label="alt timeout", style=dashed, color="#C0392B"];
+  flyto   -> abarr [label="timeout", style=dashed, color="#C0392B"];
+
+  flyto -> turns;
+  flyto -> ltime;
+  flyto -> lunlim;
+  flyto -> anchor [label="WAYPOINT"];
+  anchor -> wpt;
+  anchor -> anchor [label="correct", style=dashed, color="#27AE60"];
+
+  takeoff -> loop;
+  land    -> loop;
+  rtl     -> loop;
+  speed   -> loop;
+  turns   -> loop;
+  ltime   -> loop;
+  wpt     -> loop;
+  // lunlim blocks forever (no edge back)
+
+  {rank=same; takeoff; land; rtl; speed; flyto;}
+}
